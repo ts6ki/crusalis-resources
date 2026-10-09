@@ -175,6 +175,24 @@ def check_controlled_snapshot(page):
     expect(page.locator('#status')).to_contain_text('Keeping the previously loaded data')
 
 
+def check_theme(page):
+    background = "getComputedStyle(document.body).backgroundColor"
+    expect(page.locator('html')).to_have_attribute('data-theme', 'dark')
+    assert page.evaluate(background) == 'rgb(22, 22, 22)', page.evaluate(background)
+    expect(page.locator('#theme-switch [data-theme-choice="dark"]')).to_have_attribute('aria-pressed', 'true')
+    expect(page.locator('.lede')).to_have_text('Made by tsuki')
+    expect(page.locator('footer')).to_have_count(0)
+    page.get_by_role('button', name='Light', exact=True).click()
+    expect(page.locator('html')).to_have_attribute('data-theme', 'light')
+    assert page.evaluate(background) == 'rgb(250, 250, 248)', page.evaluate(background)
+    page.reload()
+    expect(page.locator(NATIONS).first).to_be_visible()
+    expect(page.locator('html')).to_have_attribute('data-theme', 'light')
+    expect(page.locator('#theme-switch [data-theme-choice="light"]')).to_have_attribute('aria-pressed', 'true')
+    page.get_by_role('button', name='Dark', exact=True).click()
+    expect(page.locator('html')).to_have_attribute('data-theme', 'dark')
+
+
 def check_without_saved_copy(browser, url):
     context = browser.new_context()
     page = context.new_page()
@@ -202,6 +220,7 @@ def run(url='http://127.0.0.1:8000/site/'):
         page.goto(url)
         expect(page.locator(NATIONS).first).to_be_visible()
         data = page.request.get(url + 'data/resources.json').json()
+        check_theme(page)
         check_overview(page, data)
         check_sorting(page, data)
         check_filters_and_expansion(page)

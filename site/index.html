@@ -1,11 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Compare Crusalis resources by side, nation, and town.">
+  <meta name="color-scheme" content="dark light">
   <title>Crusalis Resources</title>
   <link rel="preload" href="./fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="./theme.js"></script>
   <link rel="stylesheet" href="./styles.css">
   <script src="./alliances.js" defer></script>
   <script src="./ledger.js" defer></script>
@@ -16,10 +18,14 @@
     <header class="masthead">
       <div class="masthead-title">
         <h1>Crusalis Resources</h1>
-        <p class="lede">Territories holding each resource, by side, nation and town.</p>
+        <p class="lede">Made by tsuki</p>
       </div>
       <div class="masthead-actions">
         <p class="freshness"><span id="freshness-dot" class="freshness-dot" aria-hidden="true"></span><time id="freshness">Loading snapshot…</time></p>
+        <div id="theme-switch" class="theme-switch" role="group" aria-label="Theme">
+          <button type="button" data-theme-choice="dark" aria-pressed="true">Dark</button>
+          <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+        </div>
         <button id="reload" class="button" type="button" aria-label="Reload snapshot" title="Reload the latest published snapshot">
           <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg>
           <span class="button-label">Reload</span>
@@ -64,29 +70,6 @@
       <noscript><p>Enable JavaScript to browse towns, or <a href="./data/resources.json">download the resource snapshot</a>.</p></noscript>
     </section>
 
-    <footer class="notes">
-      <div class="note-block">
-        <h3>What the numbers mean</h3>
-        <p>Each count is the number of owned territories carrying that resource, not production or income. One territory can carry more than one resource. Ownership follows town claims, not wartime occupation.</p>
-      </div>
-      <div class="note-block">
-        <h3>Population</h3>
-        <p>Registered residents across a nation’s towns, including offline players. Search and sorting don’t change it.</p>
-      </div>
-      <div class="note-block">
-        <h3>Sides</h3>
-        <p>Allies and Axis follow the confirmed nation list. Bohemia-Moravia is Axis; Nationalist China, Communist China and Shaanxi are Allies. Nations not on the list are under Other.</p>
-      </div>
-      <div class="note-block">
-        <h3>Factories and gaps</h3>
-        <p>Factories without a known type or tier are listed as “Unspecified type.” N/A means the source doesn’t report that resource.</p>
-      </div>
-      <div class="note-block">
-        <h3>Updates</h3>
-        <p>A new snapshot is published every 2 hours, though schedules can run late. Reload fetches the latest published snapshot; it doesn’t start a new scan. Data over three hours old is marked as possibly stale.</p>
-        <p class="links"><a href="https://map.crusalis.net/" target="_blank" rel="noopener noreferrer">World map ↗</a><a href="./data/resources.json">Snapshot JSON</a></p>
-      </div>
-    </footer>
   </main>
 </body>
 </html>
