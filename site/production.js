@@ -7,7 +7,7 @@
   const format = n => n.toLocaleString('en-US', {maximumFractionDigits: 2});
   const range = values => format(values[0]) + '–' + format(values[1]);
   const readable = name => name.replaceAll('_', ' ');
-  let towns = new Map();
+  let nations = new Map();
   let selected = null;
   let lastResult = null;
 
@@ -26,15 +26,16 @@
       supply: Object.fromEntries(materials.map(k => [k, Number($(k + '-supply').value)])),
     };
   }
-  function showTown() {
-    selected = towns.get($('town').value) || null;
+  function showNation() {
+    selected = nations.get($('nation').value) || null;
     $('allocate').disabled = !selected;
     if (!selected) {
-      $('town-context').textContent = 'Custom scenario. Factory counts and supply are editable below.';
+      $('nation-context').textContent = 'Custom scenario. Factory counts and supply are editable below.';
       return;
     }
     const c = selected.counts;
-    $('town-context').textContent = `${readable(selected.name)} · ${readable(selected.nation)} · ${format(selected.population)} residents · ${format(c.factories)} factory territories · ${format(c.latex)} latex territories · ${format(c.oil)} oil territories. Installed machines and tiers are not reported; changing towns keeps your factory plan and daily supply.`;
+    const label = selected.id === null ? 'Independent towns (combined)' : readable(selected.name);
+    $('nation-context').textContent = `${label} · ${format(selected.towns.length)} towns · ${format(selected.population)} residents · ${format(c.factories)} factory territories · ${format(c.latex)} latex territories · ${format(c.oil)} oil territories. Holdings combine all towns. Installed machines and tiers are not reported; changing nations keeps your factory plan and daily supply.`;
     $('latex-nodes').value = c.latex;
     $('oil-nodes').value = c.oil;
   }
@@ -106,46 +107,43 @@
 
   async function load() {
     $('reload').disabled = true;
-    $('load-status').textContent = 'Loading town resource data…';
+    $('load-status').textContent = 'Loading nation resource data…';
     try {
       const response = await fetch('./data/resources.json', {cache: 'no-cache', signal: AbortSignal.timeout(20000)});
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const data = await response.json();
       if (data.schemaVersion !== 1 || !Array.isArray(data.nations) || !Number.isFinite(Date.parse(data.fetchedAt))) throw new Error('Invalid snapshot');
       const options = [new Option('Custom scenario', '')];
-      const nextTowns = new Map();
+      const nextNations = new Map();
       for (const nation of [...data.nations].sort((a, b) => a.name.localeCompare(b.name))) {
-        const group = node('optgroup'); group.label = readable(nation.name);
-        for (const town of [...nation.towns].sort((a, b) => a.name.localeCompare(b.name))) {
-          if (typeof town.id !== 'string' || typeof town.name !== 'string' || !town.counts || !['factories', 'latex', 'oil'].every(k => Number.isSafeInteger(town.counts[k]) && town.counts[k] >= 0)) throw new Error('Invalid town data');
-          nextTowns.set(town.id, {...town, nation: nation.name});
-          group.append(new Option(readable(town.name), town.id));
-        }
-        options.push(group);
+        if (!(nation.id === null || typeof nation.id === 'string') || typeof nation.name !== 'string' || !Array.isArray(nation.towns) || !Number.isSafeInteger(nation.population) || nation.population < 0 || !nation.counts || !['factories', 'latex', 'oil'].every(k => Number.isSafeInteger(nation.counts[k]) && nation.counts[k] >= 0)) throw new Error('Invalid nation data');
+        const key = nation.id ?? 'independent';
+        nextNations.set(key, nation);
+        options.push(new Option(nation.id === null ? 'Independent towns (combined)' : readable(nation.name), key));
       }
-      const previous = $('town').value;
-      $('town').replaceChildren(...options);
-      towns = nextTowns;
-      $('town').value = towns.has(previous) ? previous : '';
-      showTown();
+      const previous = $('nation').value;
+      $('nation').replaceChildren(...options);
+      nations = nextNations;
+      $('nation').value = nations.has(previous) ? previous : '';
+      showNation();
       const date = new Date(data.fetchedAt);
       $('freshness').textContent = 'Snapshot ' + date.toLocaleDateString();
       $('freshness').dateTime = data.fetchedAt;
       $('freshness').title = 'Data fetched ' + date.toLocaleString();
       const stale = Date.now() - date.getTime() >= 300 * 60000;
       $('freshness-dot').dataset.state = stale ? 'stale' : 'fresh';
-      $('load-status').textContent = `${format(towns.size)} towns loaded. ${stale ? 'Snapshot is over five hours old. ' : ''}Resource territories describe holdings, not installed factories.`;
+      $('load-status').textContent = `${format(nations.size)} nations loaded. ${stale ? 'Snapshot is over five hours old. ' : ''}Resource territories describe holdings, not installed factories.`;
       $('load-status').className = stale ? 'note warning' : 'note';
       render();
     } catch (error) {
-      $('load-status').textContent = 'Unable to refresh town data. ' + error.message + ' You can continue with the custom scenario or previously loaded towns.';
+      $('load-status').textContent = 'Unable to refresh nation data. ' + error.message + ' You can continue with the custom scenario or previously loaded nations.';
       $('load-status').className = 'note warning';
-      if (!towns.size) { $('freshness').textContent = 'No town data'; $('freshness-dot').dataset.state = 'error'; }
+      if (!nations.size) { $('freshness').textContent = 'No nation data'; $('freshness-dot').dataset.state = 'error'; }
     } finally { $('reload').disabled = false; }
   }
 
   document.querySelectorAll('.production-page input, .production-page select').forEach(control => control.addEventListener('input', () => {
-    if (control.id === 'town') showTown();
+    if (control.id === 'nation') showNation();
     render();
   }));
   $('allocate').addEventListener('click', () => {
@@ -168,7 +166,7 @@
   $('reset-scenario').addEventListener('click', () => {
     document.querySelectorAll('.production-page input').forEach(input => { input.value = input.defaultValue; });
     document.querySelectorAll('.production-page select').forEach(select => { select.selectedIndex = 0; });
-    showTown(); render();
+    showNation(); render();
   });
   $('reload').addEventListener('click', load);
   render(); load();

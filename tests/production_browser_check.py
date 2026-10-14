@@ -12,7 +12,7 @@ def main():
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.goto(base + 'production.html')
-        page.wait_for_function("document.querySelector('#town').options.length > 1")
+        page.wait_for_function("document.querySelector('#nation').options.length > 1")
         expect(page.locator('[data-product=steel] [data-result=supported]')).to_have_text('1,440–2,880')
         page.locator('#iron-supply').fill('0')
         expect(page.locator('[data-product=steel] [data-result=supported]')).to_have_text('0–0')
@@ -28,11 +28,23 @@ def main():
         page.locator('#hours').fill('-1')
         expect(page.locator('#output-cards article')).to_have_count(0)
         page.locator('#reset-scenario').click()
-        page.locator('#town').select_option(index=1)
+        snapshot = page.request.get(base + 'data/resources.json').json()
+        expect(page.locator('#nation option')).to_have_count(len(snapshot['nations']) + 1)
+        nation = next(n for n in snapshot['nations'] if n['id'] is not None and len(n['towns']) > 1 and n['counts']['factories'] > 0)
+        page.locator('#nation').select_option(nation['id'])
+        for resource in ('factories', 'latex', 'oil'):
+            assert nation['counts'][resource] == sum(t['counts'][resource] for t in nation['towns'])
+        expect(page.locator('#nation-context')).to_contain_text(f"{len(nation['towns'])} towns")
+        expect(page.locator('#latex-nodes')).to_have_value(str(nation['counts']['latex']))
+        expect(page.locator('#oil-nodes')).to_have_value(str(nation['counts']['oil']))
         expect(page.locator('#allocate')).to_be_enabled()
         page.locator('#allocate').click()
         planned = sum(int(page.locator(f'#{key}-count').input_value()) for key in ('steel', 'gasoline', 'rubber'))
-        expect(page.locator('#town-context')).to_contain_text(f'{planned} factory territories')
+        assert planned == nation['counts']['factories']
+        expect(page.locator('#nation-context')).to_contain_text(f'{planned} factory territories')
+        if any(n['id'] is None for n in snapshot['nations']):
+            page.locator('#nation').select_option('independent')
+            expect(page.locator('#nation-context')).to_contain_text('Independent towns (combined)')
         page.locator('summary').filter(has_text='Estimate latex').click()
         for field, value in {'latex-nodes': '2', 'oil-nodes': '3', 'latex-rate': '10', 'oil-rate': '20', 'mining-bonus': '50'}.items():
             page.locator('#' + field).fill(value)
@@ -47,7 +59,7 @@ def main():
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), f'Overflow at {width}'
         page.route('**/data/resources.json', lambda route: route.fulfill(status=503, body='Unavailable'))
         page.locator('#reload').click()
-        expect(page.locator('#load-status')).to_contain_text('Unable to refresh town data')
+        expect(page.locator('#load-status')).to_contain_text('Unable to refresh nation data')
         expect(page.locator('#allocate')).to_be_enabled()
         page.unroute('**/data/resources.json')
         page.goto(base)
@@ -56,7 +68,7 @@ def main():
         page.wait_for_selector('#output-cards article')
         assert not errors, errors
         browser.close()
-    print('Production UI checks passed: calculations, supplies, towns, extraction, validation, themes, reload recovery, navigation, and responsive widths.')
+    print('Production UI checks passed: calculations, supplies, nations, extraction, validation, themes, reload recovery, navigation, and responsive widths.')
 
 
 if __name__ == '__main__':

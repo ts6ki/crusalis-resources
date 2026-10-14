@@ -24,15 +24,15 @@
   <nav class="page-nav" aria-label="Views"><a href="./">Resources</a><a href="./production.html" aria-current="page">Production visualizer</a></nav>
   <section aria-labelledby="production-title">
     <div class="section-head"><h2 id="production-title">A day of production</h2><p class="note">Hypothetical capacity · example recipes from the Crusalis docs</p></div>
-    <p class="lede">Choose a town, plan its factories, and see what it could make with continuous operation. Compare full capacity with the materials you can supply.</p>
+    <p class="lede">Choose a nation, plan its factories, and see what it could make with continuous operation. Compare full capacity with the materials you can supply.</p>
     <p id="load-status" class="note" role="status"></p>
     <div class="scenario-controls">
-      <label class="field town-field">Town<select id="town"><option value="">Custom scenario</option></select></label>
+      <label class="field nation-field">Nation<select id="nation"><option value="">Custom scenario</option></select></label>
       <label class="field">Operating hours / day<input id="hours" type="number" min="0" max="24" step="0.5" value="24" required></label>
       <label class="field">Factory tier<select id="tier"><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option></select></label>
       <button id="reset-scenario" class="button" type="button">Reset scenario</button>
     </div>
-    <div id="town-context" class="town-context">Custom scenario. Factory counts and supply are editable below.</div>
+    <div id="nation-context" class="nation-context">Custom scenario. Factory counts and supply are editable below.</div>
     <p class="note">Town / node tier is separate from factory tier. No town-tier bonus is applied to processing output.</p>
   </section>
 

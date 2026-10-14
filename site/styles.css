@@ -142,7 +142,7 @@ h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
 .field input, .field select { width: 100%; min-width: 0; min-height: 44px; padding: 8px 12px; border: 1px solid var(--control-border); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: inherit; }
 .field input:invalid { border-color: var(--error); }
 .field input::placeholder { color: var(--placeholder); }
-.town-context { padding: 14px 16px; background: var(--surface); border-left: 3px solid var(--allies); color: var(--muted); font-size: 14px; }
+.nation-context { padding: 14px 16px; background: var(--surface); border-left: 3px solid var(--allies); color: var(--muted); font-size: 14px; }
 .output-card { display: flex; flex-direction: column; gap: 10px; border-top: 2px solid var(--rule-strong); padding: 18px 16px; background: var(--surface); }
 .production-page h3 { font-size: 15px; font-weight: 600; }
 .output-value { font-size: clamp(22px, 2.3vw, 30px); font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
@@ -164,7 +164,7 @@ h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
 }
 @media (max-width: 759px) {
   .production-page .factory-controls, .production-page .output-cards { grid-template-columns: 1fr; gap: 20px; }
-  .production-page .town-field { grid-column: 1 / -1; }
+  .production-page .nation-field { grid-column: 1 / -1; }
   .production-page .scenario-controls > button { grid-column: 1 / -1; justify-content: center; }
   .production-page .masthead-actions { display: flex; }
   .production-page #reload { width: auto; padding: 0 12px; }
