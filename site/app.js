@@ -6,8 +6,8 @@ const ui = Object.fromEntries(['freshness', 'freshness-dot', 'reload', 'status',
 const SIDES = ['Allies', 'Axis', 'Other'];
 const SIDE_FILTERS = ['All', ...SIDES];
 const DEFAULT_SORT = 'population';
-// Snapshots publish every 2 hours and GitHub schedules can run late, so allow an hour of slack.
-const STALE_MINUTES = 180;
+// Snapshots publish every 4 hours and GitHub schedules can run late, so allow an hour of slack.
+const STALE_MINUTES = 300;
 const MAX_QUERY_LENGTH = 100;
 const FETCH_TIMEOUT_MS = 20000;
 // Bump the version if the snapshot schema changes, so old saved copies are ignored.

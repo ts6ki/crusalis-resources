@@ -111,10 +111,15 @@ def build_snapshot(geometry, social):
     seen = set()
     for claim in ownership:
         require(isinstance(claim, dict), 'Invalid ownership record')
-        require(claim.get('role') in ('core', 'territory'), 'Unknown ownership role')
+        role = claim.get('role')
+        require(role in ('core', 'territory', 'captured', 'annexed'),
+                f'Unknown ownership role: {role!r}')
         # Core records are home references, duplicated alongside actual claims;
         # a stale core can even point to territory claimed by a different town.
-        if claim['role'] == 'core':
+        # Captured/annexed records are overlays on territory claims. Captured
+        # records describe wartime occupation; annexed records repeat ownership.
+        # Only territory records grant holdings, regardless of overlay order.
+        if role != 'territory':
             continue
         raw_id = claim.get('territory_id')
         require(type(raw_id) in (int, str) and str(raw_id).isdigit(), 'Invalid territory ID')

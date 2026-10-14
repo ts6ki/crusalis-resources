@@ -129,6 +129,50 @@ section { display: flex; flex-direction: column; gap: 16px; }
 .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
 h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
 .note { font-size: 13px; color: var(--muted); }
+.page-nav { display: flex; gap: 24px; border-bottom: 1px solid var(--rule); margin-top: -20px; }
+.page-nav a { min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; }
+.page-nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+.page-nav a:hover { color: var(--link); }
+.production-page { gap: 32px; }
+.production-page .masthead { margin-bottom: 8px; }
+.production-page .scenario-controls { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 16px; align-items: end; }
+.factory-controls, .output-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.supply-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 8px; font-size: 14px; min-width: 0; }
+.field input, .field select { width: 100%; min-width: 0; min-height: 44px; padding: 8px 12px; border: 1px solid var(--control-border); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: inherit; }
+.field input:invalid { border-color: var(--error); }
+.field input::placeholder { color: var(--placeholder); }
+.town-context { padding: 14px 16px; background: var(--surface); border-left: 3px solid var(--allies); color: var(--muted); font-size: 14px; }
+.output-card { display: flex; flex-direction: column; gap: 10px; border-top: 2px solid var(--rule-strong); padding: 18px 16px; background: var(--surface); }
+.production-page h3 { font-size: 15px; font-weight: 600; }
+.output-value { font-size: clamp(22px, 2.3vw, 30px); font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.production-bar { height: 6px; background: var(--track); margin: 4px 0; }
+.production-bar span { display: block; height: 100%; background: var(--allies); transition: width 160ms ease; }
+.supply-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.supply-table th, .supply-table td { text-align: right; padding: 12px; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
+.supply-table th { font-weight: 500; }
+.supply-table th:first-child { text-align: left; }
+.supply-table thead { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule-strong); }
+.assumptions { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 16px 0; }
+.assumptions summary { cursor: pointer; font-weight: 500; min-height: 28px; }
+.assumptions > :not(summary) { margin-top: 16px; }
+.production-page .warning { color: var(--warning); }
+@media (max-width: 999px) {
+  .production-page .scenario-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .factory-controls, .output-cards { gap: 12px; }
+  .supply-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 759px) {
+  .production-page .factory-controls, .production-page .output-cards { grid-template-columns: 1fr; gap: 20px; }
+  .production-page .town-field { grid-column: 1 / -1; }
+  .production-page .scenario-controls > button { grid-column: 1 / -1; justify-content: center; }
+  .production-page .masthead-actions { display: flex; }
+  .production-page #reload { width: auto; padding: 0 12px; }
+  .production-page .field input, .production-page .field select { font-size: 16px; }
+  .production-page .output-value { font-size: 30px; }
+  .page-nav { gap: 18px; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .production-bar span { transition: none; } }
 .swatch { display: inline-block; width: 10px; height: 10px; flex: none; }
 .side-allies { background: var(--allies); }
 .side-axis { background: var(--axis); }

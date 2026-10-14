@@ -18,14 +18,15 @@ test('confirmed Allied nations and source names map to Allies', () => {
   for (const name of ['USA', 'United_States_of_America', 'Philippines (USA)', 'American_Philippines',
     'UK', 'British_Empire', 'Egypt (UK)', 'British_Egypt', 'France', 'Soviets', 'Soviet_Union',
     'Netherlands', 'Indonesia (Dutch)', 'Dutch_East_Indies', 'Yugoslavia', 'Norway', 'Albania',
-    'Greece', 'Allied Spain', 'Republican_Spain', 'Liberia', 'Saudi_Arabia', 'Iraq',
-    'Nationalist_China', 'Communist China', 'Soviet_China', 'Shaanxi', 'Shaanxi clique']) {
+    'Greece', 'Allied Spain', 'Republican_Spain', 'Republic_Spain', 'Liberia', 'Saudi_Arabia', 'Iraq',
+    'Nationalist_China', 'Communist China', 'Soviet_China', 'Shaanxi', 'Shaanxi clique',
+    'Provisional_Government_Of_China', 'New_Guangxi']) {
     assert.equal(alliances.classify(name), 'Allies', name);
   }
 });
 
 test('unlisted nations stay in Other', () => {
-  for (const name of ['Provisional_Government_Of_China', 'Belgium', 'Poland', 'Independent',
+  for (const name of ['Belgium', 'Poland', 'Independent',
     'New Germany', 'Spain', 'Unknown']) {
     assert.equal(alliances.classify(name), 'Other', name);
   }

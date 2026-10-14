@@ -4,8 +4,10 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    # Every 2 hours at minute 17 (UTC). Off the hour, when GitHub's scheduler is busiest.
-    - cron: '17 */2 * * *'
+    # Every 4 hours at minute 17 (UTC), away from the busiest minute.
+    - cron: '17 */4 * * *'
+    # An additional refresh Saturday at 5 PM fixed EST (UTC-5), year-round.
+    - cron: '0 22 * * 6'
 
 permissions:
   contents: read
@@ -29,7 +31,9 @@ jobs:
       - name: Test page logic
         run: |
           node --check site/app.js
-          node --test tests/alliances.test.cjs tests/ledger.test.cjs
+          node --check site/production.js
+          node --check site/production-model.js
+          node --test tests/alliances.test.cjs tests/ledger.test.cjs tests/production.test.cjs
       - name: Fetch and validate current resources
         run: python scripts/update_data.py
       - uses: actions/configure-pages@v5

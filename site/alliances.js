@@ -13,8 +13,9 @@ const AllianceGroups = (() => {
       'France', 'Soviets', 'Soviet Union', 'USSR', 'Netherlands',
       'Indonesia', 'Indonesia (Dutch)', 'Dutch East Indies',
       'Yugoslavia', 'Norway', 'Albania', 'Greece',
-      'Allied Spain', 'Republican Spain', 'Liberia', 'Saudi Arabia', 'Iraq',
+      'Allied Spain', 'Republican Spain', 'Republic Spain', 'Liberia', 'Saudi Arabia', 'Iraq',
       'Nationalist China', 'Communist China', 'Soviet China', 'Shaanxi', 'Shaanxi clique',
+      'Provisional Government Of China', 'New Guangxi',
     ],
     Axis: [
       'Germany', 'German Empire', 'Slovakia', 'Slovakia (German)', 'Italy',

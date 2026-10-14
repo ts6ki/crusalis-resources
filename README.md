@@ -16,12 +16,12 @@ Open http://127.0.0.1:8000. An initial snapshot is included, so updating is opti
 ```sh
 python -m unittest discover -s tests -v
 node --check site/app.js
-node --test tests/alliances.test.cjs tests/ledger.test.cjs
+node --test tests/alliances.test.cjs tests/ledger.test.cjs tests/production.test.cjs
 ```
 
 Optional browser checks use [Playwright for Python](https://playwright.dev/python/docs/library). With Playwright and Chromium already installed, start `python -m http.server 8000 --bind 127.0.0.1` from the project root, then run `python tests/browser_check.py`. The checks use `/site/` to verify repository-subpath loading. `BROWSER_CHANNEL` or `BROWSER_EXECUTABLE` can select an existing compatible browser. These are development-only checks; the site and updater have no third-party runtime dependencies.
 
-Validation includes 16 collector tests, 6 alliance tests, 12 table-logic tests (ranking, search, folding, totals), browser checks against the included 102-town snapshot, and independent live-source resource comparisons for five towns. The UI checks cover side totals, ranking by every column, folding nations without a resource, the side filter, search, expansion with keyboard focus, the phone compare view, URL state, widths from 320px to 1440px, factory details, failed reload recovery, and safe rendering of source names. The Pages workflow is prepared but has not been run on GitHub.
+Validation includes 17 collector tests, 6 alliance tests, 12 table-logic tests (ranking, search, folding, totals), browser checks against the included 102-town snapshot, and independent live-source resource comparisons for five towns. The UI checks cover side totals, ranking by every column, folding nations without a resource, the side filter, search, expansion with keyboard focus, the phone compare view, URL state, widths from 320px to 1440px, factory details, failed reload recovery, and safe rendering of source names. The Pages workflow tests, refreshes, and deploys the site on GitHub.
 
 ## Host on GitHub Pages
 
@@ -30,13 +30,23 @@ Validation includes 16 collector tests, 6 alliance tests, 12 table-logic tests (
 3. In **Actions → Update resources and deploy Pages → Run workflow**, run the workflow on the default branch.
 4. Open the site URL displayed by the deployment. No custom domain or secrets are required.
 
-Pages for a private repository needs a GitHub plan that includes it (Pro or higher); on GitHub Free, Pages works only for public repositories. The published site itself is public either way, even when the repository is private. Scheduled runs use Actions minutes on private repositories: about 12 short runs a day.
+Pages for a private repository needs a GitHub plan that includes it (Pro or higher); on GitHub Free, Pages works only for public repositories. The published site itself is public either way, even when the repository is private. Scheduled runs use Actions minutes on private repositories: six short runs a day, plus the Saturday refresh.
 
-The workflow runs on default-branch pushes, manually, and every 2 hours at minute 17 (UTC). Each run tests the collector, fetches both sources, and publishes the generated snapshot with the page in one Pages artifact. It does not commit generated data back into the repository. Your checked-in local snapshot only changes when you run the collector locally.
+The workflow runs on default-branch pushes, manually, and every 4 hours at minute 17 (UTC), plus Saturdays at 5 PM fixed EST (22:00 UTC year-round, without daylight saving adjustments). Each run tests the collector, fetches both sources, and publishes the generated snapshot with the page in one Pages artifact. It does not commit generated data back into the repository. Your checked-in local snapshot only changes when you run the collector locally.
 
-GitHub schedules may be delayed and public-repository schedules can be disabled after 60 days without repository activity. The page displays the actual fetch time and warns when the data is over three hours old. Re-enable a disabled workflow in Actions. **Reload** reloads the published JSON; use **Run workflow** to fetch fresh upstream data and publish it. A failed update stops deployment, leaving the last successful site available.
+GitHub schedules may be delayed and public-repository schedules can be disabled after 60 days without repository activity. The page displays the actual fetch time and warns when the data is over five hours old (the four-hour interval plus one hour for scheduler delays). Re-enable a disabled workflow in Actions. **Reload** reloads the published JSON; use **Run workflow** to fetch fresh upstream data and publish it. A failed update stops deployment, leaving the last successful site available.
 
 ## What the counts mean
+
+### Production visualizer
+
+Open **Production visualizer** in the navigation (or `production.html`) to plan steel, gasoline, and rubber output. It uses the documented example recipes, editable machine counts and operating hours, and explicit factory-tier baseline, stacking, and rounding assumptions. It shows fully supplied capacity alongside output supported by a daily material budget. Each shared input is split proportionally by full-capacity demand, and each line is constrained only by the inputs it uses. Whole batches are counted and leftover materials are not reassigned. This balanced allocation is not an optimization of one chosen product.
+
+Town selection shows resource territory counts. **Use one machine per factory territory** creates an explicitly hypothetical allocation, split as evenly as possible across the three products, with any remainder assigned to steel and then gasoline. Neither installed machines nor town/factory tiers are inferred. The extraction helper requires user-provided hourly rates and a sustained mining-goal bonus; applying it replaces daily latex and oil supply. Town-tier bonuses, bombing, workbench crates, and vehicle assembly are not included. Nothing entered in the visualizer changes the game or the resource snapshot.
+
+With the local server above running and Playwright plus Chrome installed, run `python tests/production_browser_check.py` to check the production view. `BROWSER_CHANNEL` and `PRODUCTION_BASE_URL` can override the browser and server URL.
+
+### Resource browser
 
 - Resources: tungsten, aluminum (`aluminium` in the source), latex, chromium, oil, and factories.
 - Each count is the number of distinct owned territories carrying that resource. These are not income or production totals. One territory can contain multiple resources.
@@ -55,7 +65,7 @@ GitHub schedules may be delayed and public-repository schedules can be disabled 
 - Each browser keeps the last snapshot it loaded (in `localStorage`, key `crusalis:snapshot:v1`). Return visits show it instantly while the latest snapshot loads. If loading fails, for example because the host is down or the device is offline, the page keeps showing that saved copy and says so; the update age shows how old it is. The snapshot request revalidates with the host each time, so an unchanged snapshot costs only a small `304 Not Modified` response. Pages opened as a file, or browsers that block storage, simply skip the saved copy.
 - A dash (–) means a supported resource has no holdings; screen readers hear 0. `N/A` means the resource is absent from the source definitions and assignments, and that column can't be ranked.
 - Ownership comes from town claims, not temporary wartime occupation. Unclaimed territories are excluded.
-- Use ownership records with `role: territory`. The feed also repeats home references with `role: core`; these can be stale or reference another town's territory and do not grant additional ownership.
+- Use ownership records with `role: territory`. The feed also repeats home references with `role: core`; these can be stale or reference another town's territory and do not grant additional ownership. Wartime `captured` and `annexed` records overlay existing territory claims and are ignored: occupation does not transfer holdings, and annexation does not count the same holding twice. Unknown roles still stop the update and are named in the error.
 
 ## Data and maintenance
 

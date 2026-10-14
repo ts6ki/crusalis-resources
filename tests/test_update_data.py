@@ -104,7 +104,21 @@ class SnapshotTests(unittest.TestCase):
 
     def test_unknown_ownership_role_rejected(self):
         self.social['territories'][0]['role'] = 'new-role'
-        with self.assertRaises(ValueError): self.snapshot()
+        with self.assertRaisesRegex(ValueError, "Unknown ownership role: 'new-role'"):
+            self.snapshot()
+
+    def test_wartime_overlays_do_not_transfer_or_duplicate_holdings(self):
+        expected = self.snapshot()['nations']
+        overlays = [
+            {'town_uuid': 't2', 'territory_id': 1, 'role': 'captured'},
+            {'town_uuid': 't1', 'territory_id': 2, 'role': 'annexed'},
+        ]
+        for position in ('before', 'after'):
+            with self.subTest(position=position):
+                geo, social = fixture()
+                social['territories'] = (overlays + social['territories'] if position == 'before'
+                                         else social['territories'] + overlays)
+                self.assertEqual(build_snapshot(geo, social)['nations'], expected)
 
     def test_non_resource_claim_and_empty_nation(self):
         self.geometry['territories']['1']['nodes'] = []
