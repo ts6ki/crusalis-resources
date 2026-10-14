@@ -3,10 +3,10 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import call, patch
 from urllib.error import HTTPError, URLError
 
-from scripts.update_data import build_snapshot, fetch_json, update
+from scripts.update_data import GEOMETRY_URL, SOCIAL_URL, build_snapshot, fetch_json, update
 
 
 def fixture():
@@ -68,6 +68,14 @@ class SnapshotTests(unittest.TestCase):
         town = self.snapshot()['nations'][1]['towns'][0]
         self.assertEqual(town['counts']['factories'], 1)
         self.assertEqual(town['factories'], {'Tier 2': 1})
+
+    def test_resources_are_counted_alongside_animal_and_crop_nodes(self):
+        self.geometry['territories']['1']['nodes'] = ['animal farm', 'tungsten']
+        self.geometry['territories']['2']['nodes'] = ['potatos', 'oil', 'oil']
+        town = self.snapshot()['nations'][1]['towns'][0]
+        self.assertEqual(town['counts']['tungsten'], 1)
+        self.assertEqual(town['counts']['oil'], 1)
+        self.assertEqual([t['resources'] for t in town['territories']], [['tungsten'], ['oil']])
 
     def test_population_uses_unique_registered_members_across_all_towns(self):
         self.social['towns'].append({'uuid': 't4', 'name': 'No_resources', 'nation_uuid': 'n1'})
@@ -193,6 +201,8 @@ class FetchTests(unittest.TestCase):
             output = Path(directory) / 'data' / 'resources.json'
             fetch.side_effect = fixture()
             update(output)
+            self.assertEqual(GEOMETRY_URL, 'https://map.crusalis.net/api-proxy/v1/map/geometry')
+            self.assertEqual(fetch.call_args_list, [call(GEOMETRY_URL), call(SOCIAL_URL)])
             previous = output.read_bytes()
             self.assertEqual(json.loads(previous)['schemaVersion'], 1)
             fetch.side_effect = [ValueError('bad source')]

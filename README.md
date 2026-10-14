@@ -69,7 +69,7 @@ With the local server above running and Playwright plus Chrome installed, run `p
 
 ## Data and maintenance
 
-The collector joins [geometry](https://map.crusalis.net/map/map/geometry.json) with [town ownership](https://map.crusalis.net/api-proxy/v1/map/social). The upstream responses currently omit cross-origin access headers, so GitHub Actions fetches them and the browser loads only the same-site compact snapshot. No proxy service is needed.
+The collector joins [live geometry](https://map.crusalis.net/api-proxy/v1/map/geometry) with [town ownership](https://map.crusalis.net/api-proxy/v1/map/social), using the same endpoints as the live map. The legacy static geometry file omits later resource assignments, including resources added alongside animal or crop nodes. The upstream responses currently omit cross-origin access headers, so GitHub Actions fetches them and the browser loads only the same-site compact snapshot. No proxy service is needed.
 
 Only resource summaries and relevant territory metadata are published; resident/member records and map polygons are excluded. Requests have timeouts and limited retries. Malformed data, duplicate claims, or broken ownership references fail the update instead of publishing incomplete counts. The two upstream endpoints are fetched sequentially and do not offer a shared transaction version.
 

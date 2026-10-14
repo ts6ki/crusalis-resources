@@ -12,7 +12,8 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-GEOMETRY_URL = 'https://map.crusalis.net/map/map/geometry.json'
+# Match the live map's source; the legacy static file omits node updates.
+GEOMETRY_URL = 'https://map.crusalis.net/api-proxy/v1/map/geometry'
 SOCIAL_URL = 'https://map.crusalis.net/api-proxy/v1/map/social'
 RESOURCES = {
     'tungsten': ('Tungsten', 'tungsten'),
