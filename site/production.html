@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore hypothetical Crusalis factory output, daily supply, and production bottlenecks.">
+  <meta name="color-scheme" content="dark light">
+  <title>Production · Crusalis Resources</title>
+  <script src="./theme.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./production-model.js" defer></script>
+  <script src="./production.js" defer></script>
+</head>
+<body>
+<main class="production-page">
+  <header class="masthead">
+    <div class="masthead-title"><h1>Crusalis Resources</h1><p class="lede">Made by tsuki</p></div>
+    <div class="masthead-actions">
+      <p class="freshness"><span id="freshness-dot" class="freshness-dot" aria-hidden="true"></span><time id="freshness">Loading snapshot…</time></p>
+      <div id="theme-switch" class="theme-switch" role="group" aria-label="Theme"><button type="button" data-theme-choice="dark" aria-pressed="true">Dark</button><button type="button" data-theme-choice="light" aria-pressed="false">Light</button></div>
+      <button id="reload" class="button" type="button">Reload data</button>
+    </div>
+  </header>
+  <nav class="page-nav" aria-label="Views"><a href="./">Resources</a><a href="./production.html" aria-current="page">Production visualizer</a></nav>
+  <section aria-labelledby="production-title">
+    <div class="section-head"><h2 id="production-title">A day of production</h2><p class="note">Hypothetical capacity · example recipes from the Crusalis docs</p></div>
+    <p class="lede">Choose a nation, plan its factories, and see what it could make with continuous operation. Compare full capacity with the materials you can supply.</p>
+    <p id="load-status" class="note" role="status"></p>
+    <div class="scenario-controls">
+      <label class="field nation-field">Nation<select id="nation"><option value="">Custom scenario</option></select></label>
+      <label class="field">Operating hours / day<input id="hours" type="number" min="0" max="24" step="0.5" value="24" required></label>
+      <label class="field">Factory tier<select id="tier"><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option></select></label>
+      <button id="reset-scenario" class="button" type="button">Reset scenario</button>
+    </div>
+    <div id="nation-context" class="nation-context">Custom scenario. Factory counts and supply are editable below.</div>
+    <p class="note">Town / node tier is separate from factory tier. No town-tier bonus is applied to processing output.</p>
+  </section>
+
+  <section aria-labelledby="factory-title">
+    <div class="section-head"><h2 id="factory-title">Factory allocation</h2><button id="allocate" class="text-button" type="button" disabled>Use one machine per factory territory</button></div>
+    <p class="note">These are planned machines, not a count of installed factories. Territory counts do not establish placement limits.</p>
+    <div class="factory-controls">
+      <label class="field">Steel mills<input id="steel-count" type="number" min="0" max="10000" step="1" value="1" required><span class="note">18 iron + 9 coal → 2–4 steel</span></label>
+      <label class="field">Oil refineries<input id="gasoline-count" type="number" min="0" max="10000" step="1" value="1" required><span class="note">8 crude oil → 4–6 gasoline</span></label>
+      <div class="field"><label for="rubber-count">Rubber factories</label><input id="rubber-count" type="number" min="0" max="10000" step="1" value="1" required><label class="note" for="rubber-recipe">Rubber recipe</label><select id="rubber-recipe"><option value="latex">8 latex + 3 coal → 4–8 rubber</option><option value="oil">32 crude oil + 12 coal → 4–8 rubber</option></select></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="supply-title">
+    <div class="section-head"><h2 id="supply-title">Daily material supply</h2><button id="match-supply" class="text-button" type="button">Supply full capacity</button></div>
+    <p class="note">Total inputs available for this day, including stockpiles, mining, extraction, and imports. Shared materials are counted once.</p>
+    <div class="supply-controls">
+      <label class="field">Iron<input id="iron-supply" type="number" min="0" max="1000000000000" step="any" value="12960" required></label>
+      <label class="field">Coal<input id="coal-supply" type="number" min="0" max="1000000000000" step="any" value="8640" required></label>
+      <label class="field">Latex<input id="latex-supply" type="number" min="0" max="1000000000000" step="any" value="5760" required></label>
+      <label class="field">Crude oil<input id="oil-supply" type="number" min="0" max="1000000000000" step="any" value="5760" required></label>
+    </div>
+    <details class="assumptions">
+      <summary>Estimate latex and oil supply from extraction</summary>
+      <p class="note">Enter an hourly rate from the in-game GUI. Map income values have unconfirmed units, so rates start blank. Assumes one extraction factory per selected resource territory, operating for the hours above.</p>
+      <div class="supply-controls">
+        <label class="field">Latex extraction factories<input id="latex-nodes" type="number" min="0" max="10000" value="0" step="1" required></label>
+        <label class="field">Latex / factory / hour<input id="latex-rate" type="number" min="0" max="1000000000" step="any" placeholder="From factory GUI"></label>
+        <label class="field">Oil extraction factories<input id="oil-nodes" type="number" min="0" max="10000" value="0" step="1" required></label>
+        <label class="field">Crude oil / factory / hour<input id="oil-rate" type="number" min="0" max="1000000000" step="any" placeholder="From factory GUI"></label>
+        <label class="field">Mining-goal bonus (%)<input id="mining-bonus" type="number" min="0" max="10000" step="any" value="0" required></label>
+      </div>
+      <p id="extraction-estimate" class="note" role="status">Enter both hourly rates to estimate extraction.</p>
+      <button id="apply-extraction" class="button" type="button" disabled>Replace latex and oil daily supply</button>
+      <p class="note">The bonus is assumed sustained every operating hour. This replaces the two supply values; it does not add imports or stockpiles.</p>
+    </details>
+  </section>
+
+  <section aria-labelledby="output-title">
+    <div class="section-head"><h2 id="output-title">Daily output</h2><p id="run-description" class="note"></p></div>
+    <p id="calculation-status" role="status" aria-live="polite"></p>
+    <div id="output-cards" class="output-cards"></div>
+    <div class="section-head"><h3>Supply used</h3><p class="note">Shared inputs are split by planned demand. Leftovers are not reassigned.</p></div>
+    <div class="table-scroll"><table class="supply-table"><caption class="visually-hidden">Material demand and supply for the daily plan</caption><thead><tr><th scope="col">Material</th><th scope="col">Full-capacity need</th><th scope="col">Available</th><th scope="col">Used</th><th scope="col">Left over</th></tr></thead><tbody id="supply-results"></tbody></table></div>
+    <p class="note">Ranges describe possible batch yields, not a guaranteed average. Only completed batches count. Assumes supplied machines restart immediately and have no bombing penalty.</p>
+  </section>
+
+  <details class="assumptions" open>
+    <summary>Tier assumptions and sources</summary>
+    <p class="note">The docs specify 10% faster cycles and 10% higher output per production tier. They do not specify the baseline, stacking, or integer rounding. Change these assumptions to match your in-game results.</p>
+    <div class="factory-controls">
+      <label class="field">Tier baseline<select id="baseline"><option value="tier1">Tier 1 = listed recipe (no bonus)</option><option value="tier0">Tier 1 = first 10% bonus</option></select></label>
+      <label class="field">Bonus stacking<select id="stacking"><option value="linear">Add 10% per upgrade</option><option value="compound">Compound 10% per upgrade</option></select></label>
+      <label class="field">Output rounding per batch<select id="rounding"><option value="fractional">Keep fractional estimates</option><option value="floor">Round down</option><option value="nearest">Round to nearest item</option></select></label>
+    </div>
+    <p class="note">Workbench and vehicle output need additional recipes and craft times; they are not included. This estimates processing capacity, not unlimited manual mining.</p>
+    <p class="note">Official docs: <a href="https://www.crusalis.net/docs/factories/production/" target="_blank" rel="noreferrer">Production factories</a> · <a href="https://www.crusalis.net/docs/factories/extraction/" target="_blank" rel="noreferrer">Extraction factories</a> · <a href="https://www.crusalis.net/docs/factories/workbench/" target="_blank" rel="noreferrer">Workbench factories</a></p>
+  </details>
+  <noscript><p>Enable JavaScript to calculate production scenarios.</p></noscript>
+</main>
+</body>
+</html>
