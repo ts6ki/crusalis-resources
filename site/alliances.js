@@ -25,6 +25,7 @@ const AllianceGroups = (() => {
       'Axis Spain', 'Nationalist Spain', 'Argentina',
       'Switzerland', 'Confederacy of Switzerland', 'Iran',
       'Protectorate Of Bohemia Moravia',
+      'Danubian Federation', 'Falangist Portugal',
     ],
   };
   const membership = new Map(Object.entries(confirmed).flatMap(([side, names]) =>
