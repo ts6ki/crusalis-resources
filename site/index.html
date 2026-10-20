@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="./styles.css">
   <script src="./alliances.js" defer></script>
   <script src="./ledger.js" defer></script>
+  <script src="./history-model.js" defer></script>
+  <script src="./history.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -35,6 +37,41 @@
 
     <nav class="page-nav" aria-label="Views"><a href="./" aria-current="page">Resources</a><a href="./production.html">Production visualizer</a></nav>
     <p id="status" role="status" aria-live="polite">Loading resource data…</p>
+
+    <section class="history-panel" aria-labelledby="history-title">
+      <div class="section-head">
+        <h2 id="history-title">Through time</h2>
+        <span id="history-selected" class="history-badge">Latest</span>
+      </div>
+      <p id="history-note" class="note" role="status">Loading saved days…</p>
+      <div class="history-controls">
+        <button id="history-prev" class="button" type="button" aria-label="Previous saved day" disabled>←</button>
+        <label class="visually-hidden" for="history-slider">Saved day</label>
+        <input id="history-slider" type="range" min="0" max="0" value="0" disabled>
+        <button id="history-next" class="button" type="button" aria-label="Next saved day" disabled>→</button>
+        <label class="visually-hidden" for="history-date">Choose date</label>
+        <input id="history-date" type="date" disabled>
+        <button id="history-latest" class="button" type="button">Latest</button>
+      </div>
+      <details id="history-details">
+        <summary>Trends and changes</summary>
+        <div class="history-pickers">
+          <label>Follow <select id="history-entity"><option value="side:All">All sides</option></select></label>
+          <label>Measure <select id="history-metric">
+            <option value="population">Population</option><option value="towns">Towns</option>
+            <option value="tungsten">Tungsten</option><option value="aluminum">Aluminum</option>
+            <option value="latex">Latex</option><option value="chromium">Chromium</option>
+            <option value="oil">Oil</option><option value="factories">Factories</option>
+          </select></label>
+        </div>
+        <p id="history-chart-note" class="note"></p>
+        <svg id="history-chart" viewBox="0 0 960 160" role="img" aria-label="Daily trend"></svg>
+        <p id="history-comparison" class="note"></p>
+        <dl id="history-deltas" class="history-deltas"></dl>
+        <details><summary>Observed changes between snapshots</summary><ul id="history-changes"></ul></details>
+        <p class="note history-caveat">Daily observations can miss changes between saves. Missing days and absent nations are gaps, not zeroes.</p>
+      </details>
+    </section>
 
     <section class="totals" aria-labelledby="totals-title">
       <div class="section-head">

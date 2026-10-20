@@ -51,7 +51,8 @@ def check_sorting(page, data):
         expect(page.locator(f'#nations thead th[data-key="{key}"]')).to_have_attribute('aria-sort', 'descending')
         assert f'sort={key}' in page.url
         for side in ['Allies', 'Axis', 'Other']:
-            shown = values(page, f'#nations tbody[data-side="{side}"] .nation-row td[data-key="{key}"]')
+            # Independent is intentionally pinned last even when its count is larger.
+            shown = values(page, f'#nations tbody[data-side="{side}"] .nation-row:not([data-nation-id=""]) td[data-key="{key}"]')
             assert shown == sorted(shown, reverse=True) and all(v > 0 for v in shown), (key, side, shown)
         folded = page.locator('#nations .fold-toggle')
         for index in range(folded.count()):
@@ -137,7 +138,8 @@ def check_failures(page, data, url):
     expect(page.locator('#nations .town-row')).to_contain_text('Berlin')
     page.goto(url + '?sort=oil&q=paris')
     expect(page.locator(NATIONS)).to_have_count(1)
-    expect(page.locator(NATIONS)).to_contain_text('France')
+    paris_nation = next(n for n in data['nations'] if any('paris' in t['name'].lower() for t in n['towns']))
+    expect(page.locator(NATIONS)).to_have_attribute('data-nation-id', paris_nation['id'])
     expect(page.locator('#nations .fold-toggle')).to_have_count(0)
     page.goto(url)
 
@@ -151,7 +153,8 @@ def check_controlled_snapshot(page):
     social['towns'][1]['nation_uuid'] = 'n3'
     geo['territories']['1']['name'] = '<svg onload=alert(1)>'
     del geo['nodes']['chromium']
-    controlled = build_snapshot(geo, social)
+    controlled = build_snapshot(geo, social, mapping={'revision': 'test', 'nations': {
+        'n1': {'name': 'Germany', 'side': 'Axis'}, 'n2': {'name': 'France', 'side': 'Allies'}}})
     controlled['fetchedAt'] = '2020-01-01T00:00:00Z'
     current = {'data': controlled}
     page.route('**/data/resources.json', lambda route: route.fulfill(json=current['data']))
@@ -202,12 +205,12 @@ def check_without_saved_copy(browser, url):
     expect(page.locator('#freshness')).to_have_text('No data loaded.')
     expect(page.locator(NATIONS)).to_have_count(0)
     page.unroute('**/data/resources.json')
-    page.evaluate("localStorage.setItem('crusalis:snapshot:v1', '{not json')")
+    page.evaluate("localStorage.setItem('crusalis:snapshot:v2', '{not json')")
     page.reload()
     expect(page.locator(NATIONS).first).to_be_visible()
     expect(page.locator('#status')).to_have_text('')
-    saved = page.evaluate("JSON.parse(localStorage.getItem('crusalis:snapshot:v1')).schemaVersion")
-    assert saved == 1, saved
+    saved = page.evaluate("JSON.parse(localStorage.getItem('crusalis:snapshot:v2')).schemaVersion")
+    assert saved in (1, 2), saved
     context.close()
 
 

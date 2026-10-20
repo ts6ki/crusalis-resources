@@ -2,7 +2,8 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const {test} = require('node:test');
-const groups = vm.runInNewContext(fs.readFileSync('site/alliances.js', 'utf8') + '\nAllianceGroups;');
+const groups = vm.runInNewContext(fs.readFileSync('site/alliances.js', 'utf8') + '\nAllianceGroups;', {},
+  {filename: require('node:path').resolve('site/alliances.js')});
 const mapping = {revision: 'test', nations: {a: {name: 'Hungary', side: 'Axis'}, b: {name: 'France', side: 'Allies'}}};
 test('UUID membership survives renames and never follows a reused name', () => {
   groups.configure(mapping);

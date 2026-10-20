@@ -1,6 +1,7 @@
 # Daily history and timeline plan
 
-Status: proposed; no application or workflow changes made.
+Status: implemented (UUID migration, archive writer, workflow, timeline UI).
+The first observation is saved by the next nightly run or a manual run.
 
 ## Goal
 

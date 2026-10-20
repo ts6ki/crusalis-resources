@@ -112,7 +112,7 @@
       const response = await fetch('./data/resources.json', {cache: 'no-cache', signal: AbortSignal.timeout(20000)});
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const data = await response.json();
-      if (data.schemaVersion !== 1 || !Array.isArray(data.nations) || !Number.isFinite(Date.parse(data.fetchedAt))) throw new Error('Invalid snapshot');
+      if (![1, 2].includes(data.schemaVersion) || !Array.isArray(data.nations) || !Number.isFinite(Date.parse(data.fetchedAt))) throw new Error('Invalid snapshot');
       const options = [new Option('Custom scenario', '')];
       const nextNations = new Map();
       for (const nation of [...data.nations].sort((a, b) => a.name.localeCompare(b.name))) {

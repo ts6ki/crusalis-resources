@@ -11,7 +11,7 @@ const STALE_MINUTES = 300;
 const MAX_QUERY_LENGTH = 100;
 const FETCH_TIMEOUT_MS = 20000;
 // Bump the version if the snapshot schema changes, so old saved copies are ignored.
-const CACHE_KEY = 'crusalis:snapshot:v1';
+const CACHE_KEY = 'crusalis:snapshot:v2';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ICONS = {
   chevron: {box: '0 0 12 12', path: 'M4.5 2.5 8 6l-3.5 3.5'},
@@ -33,6 +33,20 @@ let snapshot = null;
 let snapshotSource = null; // 'saved' (this browser's copy) or 'network'
 let groups = [];
 let columns = [];
+let mappingPromise = null;
+
+// Schema 2 carries its saved assignments and works offline without a second file.
+async function ensureLegacyAlliances(data) {
+  if (data.schemaVersion === 2) return;
+  if (!mappingPromise) {
+    mappingPromise = fetch('./data/alliances.json', {cache: 'no-cache', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)})
+      .then(response => {
+        if (!response.ok) throw new Error('Alliance mapping request failed (HTTP ' + response.status + ').');
+        return response.json();
+      }).then(data => AllianceGroups.configure(data)).catch(error => { mappingPromise = null; throw error; });
+  }
+  await mappingPromise;
+}
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
@@ -93,7 +107,7 @@ function fillCount(target, value, available = true) {
 
 function validate(data) {
   const expected = ['tungsten', 'aluminum', 'latex', 'chromium', 'oil', 'factories'];
-  if (data?.schemaVersion !== 1 || !Number.isFinite(Date.parse(data.fetchedAt)) ||
+  if (![1, 2].includes(data?.schemaVersion) || !Number.isFinite(Date.parse(data.fetchedAt)) ||
       !Array.isArray(data.nations) || !Array.isArray(data.resources) ||
       data.resources.length !== expected.length ||
       data.resources.some((r, i) => r.key !== expected[i] || typeof r.label !== 'string' || typeof r.available !== 'boolean')) {
@@ -101,13 +115,22 @@ function validate(data) {
   }
   const validCounts = counts => counts && expected.every(key => Number.isSafeInteger(counts[key]) && counts[key] >= 0);
   const validPopulation = value => Number.isSafeInteger(value) && value >= 0;
+  if (data.schemaVersion === 2 && (typeof data.allianceRevision !== 'string' || !data.allianceRevision)) throw new Error('Missing alliance revision.');
+  const nationIds = new Set(), townIds = new Set(), territoryIds = new Set();
   for (const nation of data.nations) {
     if (!(nation.id === null || typeof nation.id === 'string') || typeof nation.name !== 'string' || !validPopulation(nation.population) || !validCounts(nation.counts) || !Array.isArray(nation.towns)) throw new Error('Invalid nation data.');
+    if (nationIds.has(nation.id)) throw new Error('Duplicate nation ID.');
+    nationIds.add(nation.id);
+    if (data.schemaVersion === 2 && (!SIDES.includes(nation.alliance) || nation.id === null && nation.alliance !== 'Other')) throw new Error('Invalid alliance.');
     for (const town of nation.towns) {
+      if (townIds.has(town.id) || data.schemaVersion === 2 && town.nationId !== nation.id) throw new Error('Invalid town identity.');
+      townIds.add(town.id);
       if (typeof town.id !== 'string' || typeof town.name !== 'string' || !validPopulation(town.population) || !validCounts(town.counts) ||
           !town.factories || typeof town.factories !== 'object' || !Object.values(town.factories).every(validPopulation) ||
           !Array.isArray(town.territories)) throw new Error('Invalid town data.');
       for (const territory of town.territories) {
+        if (territoryIds.has(territory.id)) throw new Error('Duplicate territory.');
+        territoryIds.add(territory.id);
         if (typeof territory.id !== 'string' || typeof territory.name !== 'string' ||
             !Array.isArray(territory.core) || territory.core.length !== 2 || !territory.core.every(Number.isFinite) ||
             !Array.isArray(territory.resources) || !territory.resources.every(key => expected.includes(key)) ||
@@ -121,6 +144,14 @@ function validate(data) {
 function updateFreshness() {
   if (!snapshot) return;
   const date = new Date(snapshot.fetchedAt);
+  if (snapshotSource === 'history') {
+    ui.freshness.textContent = 'Saved ' + snapshot.history.date;
+    ui.freshness.title = 'Captured ' + date.toLocaleString();
+    ui.freshness.dateTime = snapshot.fetchedAt;
+    ui.freshness.classList.remove('warning');
+    ui['freshness-dot'].dataset.state = 'fresh';
+    return;
+  }
   const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
   const age = minutes < 1 ? 'just now' : minutes < 60 ? minutes + ' min ago' :
     minutes < 1440 ? Math.floor(minutes / 60) + ' h ago' : Math.floor(minutes / 1440) + ' d ago';
@@ -562,10 +593,16 @@ function applySnapshot(next, source) {
   snapshotSource = source;
   groups = AllianceGroups.group(snapshot.nations);
   columns = Ledger.columns(snapshot.resources);
+  const nationIds = new Set(next.nations.map(n => n.id ?? 'independent'));
+  const townIds = new Set(next.nations.flatMap(n => n.towns.map(t => t.id)));
+  for (const key of state.nationOpen) if (!nationIds.has(key)) state.nationOpen.delete(key);
+  for (const key of state.townOpen) if (!townIds.has(key)) state.townOpen.delete(key);
   if (!isValidSort(state.sort)) state.sort = DEFAULT_SORT;
   renderTotals();
   updateFreshness();
   render();
+  if (source === 'history') setStatus('');
+  historyView.observe(next, source);
 }
 
 function fallbackNote() {
@@ -574,17 +611,21 @@ function fallbackNote() {
 }
 
 // "no-cache" revalidates with the host on every load, so an unchanged snapshot costs a small 304 response.
-async function load({quiet = false} = {}) {
+async function load({quiet = false, guard = () => true} = {}) {
   ui.reload.disabled = true;
   if (!quiet) setStatus('Loading resource data…');
   try {
     const response = await fetch(new URL('./data/resources.json', document.baseURI), {cache: 'no-cache', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)});
     if (!response.ok) throw new Error('Snapshot request failed (HTTP ' + response.status + ').');
     const text = await response.text();
-    applySnapshot(validate(JSON.parse(text)), 'network');
+    const next = validate(JSON.parse(text));
+    await ensureLegacyAlliances(next);
+    if (!guard()) return;
+    applySnapshot(historyView.annotate(next), 'network');
     saveSnapshot(text);
     setStatus('');
   } catch (error) {
+    if (!guard()) return;
     setStatus('Unable to load the latest snapshot. ' + error.message + ' ' + fallbackNote(), snapshot ? 'warning' : 'error');
     if (!snapshot) {
       ui.freshness.textContent = 'No data loaded.';
@@ -595,14 +636,19 @@ async function load({quiet = false} = {}) {
   }
 }
 
-function start() {
+async function start() {
   readUrl();
   const saved = readSavedSnapshot();
-  if (saved) {
-    applySnapshot(saved, 'saved');
-    setStatus('');
+  if (saved && !new URLSearchParams(location.search).has('date')) {
+    try {
+      await ensureLegacyAlliances(saved);
+      applySnapshot(saved, 'saved');
+      setStatus('');
+    } catch {
+      // A legacy copy needs the UUID mapping. Still try loading a schema-2 latest.
+    }
   }
-  load({quiet: Boolean(saved)});
+  await historyView.start();
 }
 
 ui['side-filter'].addEventListener('click', event => {
@@ -618,6 +664,7 @@ ui.search.addEventListener('input', () => {
   render();
 });
 ui['clear-search'].addEventListener('click', clearSearch);
-ui.reload.addEventListener('click', () => load());
+const historyView = HistoryView.create({validate, apply: applySnapshot, loadLatest: load, setStatus});
+ui.reload.addEventListener('click', () => historyView.reload());
 setInterval(updateFreshness, 60000);
 start();

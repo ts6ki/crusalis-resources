@@ -2,12 +2,21 @@ name: Update resources and deploy Pages
 
 on:
   push:
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      archive:
+        description: Save a daily observation before deploying
+        type: boolean
+        default: true
   schedule:
     # Every 4 hours at minute 17 (UTC), away from the busiest minute.
     - cron: '17 */4 * * *'
     # An additional refresh Saturday at 5 PM fixed EST (UTC-5), year-round.
     - cron: '0 22 * * 6'
+    # Nightly daily-history save at 11:47 PM Pacific, following daylight saving time.
+    - cron: '47 23 * * *'
+      timezone: America/Los_Angeles
 
 permissions:
   contents: read
@@ -17,8 +26,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  archive:
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      (github.event.schedule == '47 23 * * *' ||
+       (github.event_name == 'workflow_dispatch' && inputs.archive))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Verify collector and archive writer
+        run: python -m unittest discover -s tests -v
+      - name: Fetch a fresh observation
+        run: python scripts/update_data.py
+      - name: Persist the daily observation
+        env:
+          CODE_REVISION: ${{ github.sha }}
+        run: |
+          git config user.name ts6ki
+          git config user.email 196579974+ts6ki@users.noreply.github.com
+          python scripts/persist_history.py --revision "$CODE_REVISION"
+
   build:
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: archive
+    if: >-
+      always() && !cancelled() &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      (needs.archive.result == 'success' || needs.archive.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -33,16 +72,35 @@ jobs:
           node --check site/app.js
           node --check site/production.js
           node --check site/production-model.js
-          node --test tests/alliances.test.cjs tests/ledger.test.cjs tests/production.test.cjs
+          node --check site/history.js
+          node --test tests/*.test.cjs
+      - name: Include the permanent archive
+        shell: bash
+        run: |
+          set +e
+          git ls-remote --exit-code --heads origin history > /dev/null
+          result=$?
+          set -e
+          if [ "$result" -eq 0 ]; then
+            git fetch --no-tags origin refs/heads/history
+            mkdir -p site/data/history
+            git archive FETCH_HEAD history | tar -x -C site/data
+          elif [ "$result" -ne 2 ]; then
+            echo "Could not read history branch"
+            exit "$result"
+          fi
       - name: Fetch and validate current resources
         run: python scripts/update_data.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
+          retention-days: 1
 
   deploy:
     needs: build
+    # A skipped archive job would otherwise skip deployment through the default success() check.
+    if: always() && !cancelled() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

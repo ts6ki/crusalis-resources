@@ -16,12 +16,12 @@ Open http://127.0.0.1:8000. An initial snapshot is included, so updating is opti
 ```sh
 python -m unittest discover -s tests -v
 node --check site/app.js
-node --test tests/alliances.test.cjs tests/ledger.test.cjs tests/production.test.cjs
+node --test tests/*.test.cjs
 ```
 
 Optional browser checks use [Playwright for Python](https://playwright.dev/python/docs/library). With Playwright and Chromium already installed, start `python -m http.server 8000 --bind 127.0.0.1` from the project root, then run `python tests/browser_check.py`. The checks use `/site/` to verify repository-subpath loading. `BROWSER_CHANNEL` or `BROWSER_EXECUTABLE` can select an existing compatible browser. These are development-only checks; the site and updater have no third-party runtime dependencies.
 
-Validation includes 17 collector tests, 6 alliance tests, 12 table-logic tests (ranking, search, folding, totals), browser checks against the included 102-town snapshot, and independent live-source resource comparisons for five towns. The UI checks cover side totals, ranking by every column, folding nations without a resource, the side filter, search, expansion with keyboard focus, the phone compare view, URL state, widths from 320px to 1440px, factory details, failed reload recovery, and safe rendering of source names. The Pages workflow tests, refreshes, and deploys the site on GitHub.
+Validation covers collector ownership and population rules, UUID alliance membership, immutable daily archives, Git persistence and retry behavior, table logic, and production calculations. Browser checks cover historical URLs, renamed entities, alliance changes, missing days, absent nations, comparisons, failed requests, stale-response races, keyboard controls, and mobile layouts.
 
 ## Host on GitHub Pages
 
@@ -32,9 +32,73 @@ Validation includes 17 collector tests, 6 alliance tests, 12 table-logic tests (
 
 Pages for a private repository needs a GitHub plan that includes it (Pro or higher); on GitHub Free, Pages works only for public repositories. The published site itself is public either way, even when the repository is private. Scheduled runs use Actions minutes on private repositories: six short runs a day, plus the Saturday refresh.
 
-The workflow runs on default-branch pushes, manually, and every 4 hours at minute 17 (UTC), plus Saturdays at 5 PM fixed EST (22:00 UTC year-round, without daylight saving adjustments). Each run tests the collector, fetches both sources, and publishes the generated snapshot with the page in one Pages artifact. It does not commit generated data back into the repository. Your checked-in local snapshot only changes when you run the collector locally.
+The workflow runs on pushes to `main`, manually, every 4 hours at minute 17 (UTC), Saturdays at 5 PM fixed EST, and nightly at 11:47 PM Pacific (`America/Los_Angeles`, following daylight saving time). Regular runs publish fresh latest data. The nightly run also commits one daily observation to the dedicated `history` branch before deploying. Manual runs default to saving an observation; uncheck `archive` to deploy without creating one. Source code stays on `main`.
 
 GitHub schedules may be delayed and public-repository schedules can be disabled after 60 days without repository activity. The page displays the actual fetch time and warns when the data is over five hours old (the four-hour interval plus one hour for scheduler delays). Re-enable a disabled workflow in Actions. **Reload** reloads the published JSON; use **Run workflow** to fetch fresh upstream data and publish it. A failed update stops deployment, leaving the last successful site available.
+
+## Daily history
+
+The **Through time** panel has a saved-day slider, date picker, previous/next
+buttons, and **Latest**. A date changes the entire resource table and its alliance
+totals. Open **Trends and changes** to follow a nation or side, choose a metric,
+and compare with the previous available observation. URLs preserve the date,
+selected nation UUID, metric, search, side, and sorting.
+
+Daily files record their real fetch time and Pacific date. GitHub schedules can
+run late or be dropped; a delayed run crossing midnight is saved under its actual
+capture date. Missing days stay missing. A manual retry cannot reconstruct a
+past day from today's data. Multiple runs on one date keep the first successful
+observation unchanged, including an early manual save. History begins when this
+feature is enabled; the included empty index is intentional.
+
+A nation or town keeps its history when its UUID survives a rename. Saved names,
+alliance assignments, and town-to-nation relationships remain as observed.
+Historical search also matches recorded aliases. Charts show absent nations as
+gaps. A different UUID is a different entity even if it reuses the same name.
+Changes describe observed renames, memberships, and resource-territory owners;
+they do not prove conquest or liberation or track individual residents.
+
+Permanent files live on the `history` branch:
+
+```text
+history/index.json
+history/entities.json
+history/YYYY/MM/YYYY-MM-DD.json
+history/summaries/YYYY.json
+history/relationships.json   # optional confirmed lineage annotations
+```
+
+Every deployment includes that branch under `site/data/history/`. The archive
+writer uses the automatic repository token with `contents: write`, commits as
+`ts6ki`, retries conflicting pushes without force, and writes snapshots before
+Pages deployment. Deployment failures therefore do not erase a successful save.
+Normal build/deploy jobs retain read-only repository access. Pages artifacts are
+kept for one day; they are not the permanent archive. Public standard runners
+and Pages require no paid service for this setup.
+
+For an explicitly confirmed recreated entity, maintain an optional array in
+`history/relationships.json` on the archive branch, for example:
+
+```json
+[{"entityType":"nations","from":"old-uuid","to":"new-uuid","kind":"restoration","date":"2026-10-23","provenance":"Confirmed by server announcement"}]
+```
+
+Both IDs must have archived observations. Supported kinds are `merger`,
+`restoration`, and `successor`. On the next archive run the annotation appears in
+the changes list; original series stay separate and are never summed together.
+Use actual confirmed dates and provenance, not inferred population changes.
+
+Run the extra UI check against a local server; its history data stays in a
+temporary directory and is intercepted in the test browser:
+
+```sh
+python tests/history_browser_check.py http://127.0.0.1:8000/site/
+```
+
+The archive tests use temporary local Git remotes and never push to GitHub.
+On Windows, Python may need the `tzdata` package for IANA timezone tests; the
+Ubuntu Actions runner already provides the timezone database. No additional
+runtime dependency is needed in production.
 
 ## What the counts mean
 
@@ -54,7 +118,7 @@ With the local server above running and Playwright plus Chrome installed, run `p
 - Population counts distinct resident UUIDs in the source's town membership records, combined across every town in the nation. It includes offline residents and towns hidden by search. Duplicate memberships do not inflate nation totals. Only counts are published, not resident identities.
 - **Totals by side** shows each side's towns, population, and resource territories, with a thin bar for its share of each column. These totals always include every town and never change with search or sorting.
 - Below it, one table lists every nation with the same columns. **All sides**, **Allies**, **Axis**, and **Other** filter the table; the counts on those buttons are nations. From 1000px the table header stays visible while scrolling. Between 760px and 999px the table scrolls sideways with the nation column pinned.
-- Protectorate of Bohemia Moravia belongs to Axis. The three Chinese United Front nations—Nationalist China, Communist China (Soviet China in the source), and Shaanxi—belong to Allies. Unlisted nations appear under Other. Membership uses exact aliases in `site/alliances.js`; historical allegiances are not inferred. Nationalist Spain maps to Axis Spain, and Republican Spain to Allied Spain. Source names such as German Empire, British Empire, American Philippines, and Dutch East Indies are mapped to their supplied country names.
+- Alliance membership uses nation UUIDs in `site/data/alliances.json`; names are display labels. Danubian Federation (formerly Hungary), Falangist Portugal, and Italy (formerly Roman Empire) are confirmed Axis entries. Renaming a known nation preserves its side. An unknown UUID stays Other even if its name matches an older nation. To explicitly assign or change a side, update the UUID entry and mapping revision; the next collection uses it, and archived snapshots retain their saved assignments.
 - Nations start collapsed. Expand a nation to see its towns, then expand a town for territory IDs, core X/Z coordinates, and factory types. Searching opens matching nations automatically; a nation-name match lists all its towns, otherwise only matching towns are listed.
 - Below 760px, phones show one figure per row instead of the full table. **Compare by** picks the figure and ranks by it, a sentence and bar summarize the three sides for that figure, and expanding a nation shows all six resources.
 - Factory counts are per territory. A generic `factory` marker plus a `factorytier2` marker means one Tier 2 factory territory, not two factories. Unspecified types are shown explicitly, and unfamiliar future factory labels are retained. Multiple specific labels describe one territory together.
@@ -62,7 +126,7 @@ With the local server above running and Playwright plus Chrome installed, run `p
 - Select a column heading to rank by it, largest first, with population and then name as tie-breakers; **Nation** sorts A–Z. Population is the default. While ranking by a resource, nations without any of it fold into one **Show N nations with no …** row per side; searching shows them all. Nation figures always cover the whole nation.
 - The side, ranking, and search are kept in the page URL (`?side=Axis&sort=oil&q=berlin`), so a view can be shared as a link.
 - The header shows the update age, a **Dark**/**Light** theme switch, and a **Reload** button. The page opens in a dark theme based on IBM Carbon's Gray 100; a light choice is remembered in the browser (`localStorage`, key `crusalis:theme`).
-- Each browser keeps the last snapshot it loaded (in `localStorage`, key `crusalis:snapshot:v1`). Return visits show it instantly while the latest snapshot loads. If loading fails, for example because the host is down or the device is offline, the page keeps showing that saved copy and says so; the update age shows how old it is. The snapshot request revalidates with the host each time, so an unchanged snapshot costs only a small `304 Not Modified` response. Pages opened as a file, or browsers that block storage, simply skip the saved copy.
+- Each browser keeps its latest snapshot in `localStorage` under `crusalis:snapshot:v2`. Historical browsing uses a separate bounded memory cache and never replaces the saved Latest copy. Schema-v1 snapshots remain readable during rollout using UUID alliance lookup, but are not eligible for archival or historical comparisons.
 - A dash (–) means a supported resource has no holdings; screen readers hear 0. `N/A` means the resource is absent from the source definitions and assignments, and that column can't be ranked.
 - Ownership comes from town claims, not temporary wartime occupation. Unclaimed territories are excluded.
 - Use ownership records with `role: territory`. The feed also repeats home references with `role: core`; these can be stale or reference another town's territory and do not grant additional ownership. Wartime `captured` and `annexed` records overlay existing territory claims and are ignored: occupation does not transfer holdings, and annexation does not count the same holding twice. Unknown roles still stop the update and are named in the error.

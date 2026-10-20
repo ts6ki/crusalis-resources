@@ -3,7 +3,8 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const {test} = require('node:test');
 function model() {
-  return vm.runInNewContext(fs.readFileSync('site/history-model.js', 'utf8') + '\nHistoryModel;');
+  return vm.runInNewContext(fs.readFileSync('site/history-model.js', 'utf8') + '\nHistoryModel;', {},
+    {filename: require('node:path').resolve('site/history-model.js')});
 }
 const data = (name, nationId = 'a') => ({resources: [{key: 'oil', available: true}],
   nations: [{id: nationId, name, alliance: 'Axis', population: 10, counts: {oil: 2},

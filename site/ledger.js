@@ -35,10 +35,11 @@ const Ledger = (() => {
   // A nation-name match keeps all of its towns; otherwise only matching towns remain.
   function matches(nations, query) {
     const q = normalized(query.trim());
+    const includes = item => [item.name, ...(item.aliases || [])].some(name => normalized(name).includes(q));
     return nations
       .map(nation => ({
         nation,
-        towns: !q || normalized(nation.name).includes(q) ? nation.towns : nation.towns.filter(t => normalized(t.name).includes(q)),
+        towns: !q || includes(nation) ? nation.towns : nation.towns.filter(includes),
       }))
       .filter(match => match.towns.length > 0);
   }
