@@ -57,7 +57,18 @@ def factory_type(nodes):
     return ' + '.join(labels) if labels else 'Unspecified type'
 
 
-def build_snapshot(geometry, social):
+def load_alliances():
+    path = Path(__file__).resolve().parents[1] / 'site/data/alliances.json'
+    return json.loads(path.read_text(encoding='utf-8'))
+
+
+def build_snapshot(geometry, social, mapping=None):
+    mapping = load_alliances() if mapping is None else mapping
+    require(isinstance(mapping.get('revision'), str) and bool(mapping['revision']),
+            'Missing alliance revision')
+    require(isinstance(mapping.get('nations'), dict), 'Invalid alliance mapping')
+    require(all(isinstance(v, dict) and v.get('side') in ('Allies', 'Axis', 'Other')
+                for v in mapping['nations'].values()), 'Invalid alliance side')
     require(isinstance(geometry, dict) and isinstance(social, dict), 'Sources must be objects')
     definitions = geometry.get('nodes')
     territories = geometry.get('territories')
@@ -95,16 +106,18 @@ def build_snapshot(geometry, social):
         normalized[str(territory_id)] = (territory, set(nodes))
         all_nodes.update(nodes)
 
-    groups = {key: {'id': key, 'name': n['name'], 'towns': [], 'counts': empty_counts()}
+    groups = {key: {'id': key, 'name': n['name'], 'towns': [], 'counts': empty_counts(),
+                    'alliance': mapping['nations'].get(key, {}).get('side', 'Other')}
               for key, n in nations.items()}
-    groups[None] = {'id': None, 'name': 'Independent', 'towns': [], 'counts': empty_counts()}
+    groups[None] = {'id': None, 'name': 'Independent', 'towns': [], 'counts': empty_counts(), 'alliance': 'Other'}
     output_towns = {}
     for key, town in towns.items():
         require('nation_uuid' in town, f'Missing nation field for town {key}')
         nation_id = town['nation_uuid']
         require(nation_id is None or isinstance(nation_id, str), f'Invalid nation for town {key}')
         require(nation_id in groups, f'Unknown nation {nation_id} for town {key}')
-        output = {'id': key, 'name': town['name'], 'population': len(town_residents[key]), 'counts': empty_counts(),
+        output = {'id': key, 'name': town['name'], 'nationId': nation_id,
+                  'population': len(town_residents[key]), 'counts': empty_counts(),
                   'factories': {}, 'territories': []}
         output_towns[key] = output
         groups[nation_id]['towns'].append(output)
@@ -163,7 +176,8 @@ def build_snapshot(geometry, social):
         ordered.append(group)
     ordered.sort(key=lambda n: (n['id'] is None, n['name'].casefold(), n['id'] or ''))
     return {
-        'schemaVersion': 1,
+        'schemaVersion': 2,
+        'allianceRevision': mapping['revision'],
         'fetchedAt': datetime.now(timezone.utc).isoformat(timespec='seconds'),
         'sources': {'geometry': GEOMETRY_URL, 'social': SOCIAL_URL},
         'resources': [

@@ -1,43 +1,20 @@
-'use strict';
-
-// Membership follows the supplied nation-confirmation list, not historical alliances.
-// Add renamed nations as explicit aliases here. Unlisted nations stay in Other.
+﻿'use strict';
+// Names are labels. Snapshot assignments are frozen; schema-v1 fallback uses UUIDs only.
 const AllianceGroups = (() => {
+  const sides = ['Allies', 'Axis', 'Other'];
+  let membership = new Map();
   const normalize = name => name.toLowerCase().replace(/[_()]/g, ' ').replace(/\s+/g, ' ').trim();
-  const confirmed = {
-    Allies: [
-      'USA', 'United States of America', 'United States',
-      'Philippines', 'Philippines (USA)', 'American Philippines',
-      'UK', 'United Kingdom', 'British Empire',
-      'Egypt', 'Egypt (UK)', 'British Egypt',
-      'France', 'French Republic', 'Soviets', 'Soviet Union', 'USSR', 'Netherlands',
-      'Indonesia', 'Indonesia (Dutch)', 'Dutch East Indies',
-      'Yugoslavia', 'Norway', 'Albania', 'Greece',
-      'Allied Spain', 'Republican Spain', 'Republic Spain', 'Second Spanish Republic',
-      'Liberia', 'Saudi Arabia', 'Iraq',
-      'Nationalist China', 'Communist China', 'Soviet China', 'Shaanxi', 'Shaanxi clique',
-      'Provisional Government Of China', 'New Guangxi',
-    ],
-    Axis: [
-      'Germany', 'German Empire', 'Slovakia', 'Slovakia (German)', 'Italy',
-      'Japan', 'Empire of Japan', 'Manchuria', 'Manchuria (Japan)',
-      'Finland', 'Greater Finland', 'Roman Empire', 'Romania', 'Hungary', 'Bulgaria', 'Thailand',
-      'Axis Spain', 'Nationalist Spain', 'Argentina',
-      'Switzerland', 'Confederacy of Switzerland', 'Iran',
-      'Protectorate Of Bohemia Moravia',
-      'Danubian Federation', 'Falangist Portugal',
-    ],
-  };
-  const membership = new Map(Object.entries(confirmed).flatMap(([side, names]) =>
-    names.map(name => [normalize(name), side])));
-  const classify = name => membership.get(normalize(name)) || 'Other';
-  function group(nations) {
-    return ['Allies', 'Axis', 'Other'].map(name => ({
-      name,
-      nations: nations.filter(nation => classify(nation.name) === name).sort((a, b) =>
-        Number(a.id === null) - Number(b.id === null) || b.population - a.population ||
-        normalize(a.name).localeCompare(normalize(b.name), 'en')),
-    }));
+  function configure(data) {
+    if (!data || typeof data.revision !== 'string' || !data.nations ||
+        Object.values(data.nations).some(n => !sides.includes(n.side))) throw new Error('Invalid alliance mapping');
+    membership = new Map(Object.entries(data.nations).map(([id, n]) => [id, n.side]));
   }
-  return {classify, group};
+  const classify = nation => nation.id === null ? 'Other' :
+    sides.includes(nation.alliance) ? nation.alliance : membership.get(nation.id) || 'Other';
+  function group(nations) {
+    return sides.map(name => ({name, nations: nations.filter(n => classify(n) === name).sort((a, b) =>
+      Number(a.id === null) - Number(b.id === null) || b.population - a.population ||
+      normalize(a.name).localeCompare(normalize(b.name), 'en'))}));
+  }
+  return {configure, classify, group};
 })();

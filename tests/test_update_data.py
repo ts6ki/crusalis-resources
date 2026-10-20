@@ -204,7 +204,7 @@ class FetchTests(unittest.TestCase):
             self.assertEqual(GEOMETRY_URL, 'https://map.crusalis.net/api-proxy/v1/map/geometry')
             self.assertEqual(fetch.call_args_list, [call(GEOMETRY_URL), call(SOCIAL_URL)])
             previous = output.read_bytes()
-            self.assertEqual(json.loads(previous)['schemaVersion'], 1)
+            self.assertEqual(json.loads(previous)['schemaVersion'], 2)
             fetch.side_effect = [ValueError('bad source')]
             with self.assertRaises(ValueError): update(output)
             self.assertEqual(output.read_bytes(), previous)

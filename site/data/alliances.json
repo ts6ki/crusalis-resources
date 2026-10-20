@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "revision": "2026-10-20-uuid-1",
+  "nations": {
+    "fc64ec15-e10a-466f-a584-3d34beff6479": {
+      "name": "Albania",
+      "side": "Allies"
+    },
+    "642e0d1f-4aca-42b9-97d4-1f01a0c4fb03": {
+      "name": "Argentina",
+      "side": "Axis"
+    },
+    "af8d7049-97f1-45d9-9a62-12c55b4e8b98": {
+      "name": "British_Egypt",
+      "side": "Allies"
+    },
+    "ca61df36-d478-4e76-af0d-c3e62bf07dcc": {
+      "name": "British_Empire",
+      "side": "Allies"
+    },
+    "5e51c83a-2a8b-43de-bc08-bfe692085046": {
+      "name": "Bulgaria",
+      "side": "Axis"
+    },
+    "81340518-193b-4f56-b910-17b2cb2a9e09": {
+      "name": "Confederacy_of_Switzerland",
+      "side": "Axis"
+    },
+    "5bbaab0c-aa12-44d8-9b39-15b4f00eb584": {
+      "name": "Empire_of_Japan",
+      "side": "Axis"
+    },
+    "9b02ded2-6eae-4e48-9db0-cee608afa169": {
+      "name": "French_Republic",
+      "side": "Allies"
+    },
+    "325c9bc4-856c-4f4d-b1c9-bd7c4f51c43d": {
+      "name": "German_Empire",
+      "side": "Axis"
+    },
+    "1fcf1b34-f973-445c-8696-fe249c50f1b1": {
+      "name": "Greater_Finland",
+      "side": "Axis"
+    },
+    "ff66bd4e-258e-4ca6-a73e-197c1f9a9752": {
+      "name": "Greece",
+      "side": "Allies"
+    },
+    "88fe2814-0d6c-40b8-b752-2aed5b71554a": {
+      "name": "Danubian_Federation",
+      "side": "Axis"
+    },
+    "f8fc2558-5994-4ec8-ab42-8bf70e83e5ee": {
+      "name": "Indonesia",
+      "side": "Allies"
+    },
+    "b492828a-efd4-4576-a02e-1a85e5629d60": {
+      "name": "Iran",
+      "side": "Axis"
+    },
+    "29198cd1-3492-4a29-b739-b8fd7a04f1e7": {
+      "name": "Liberia",
+      "side": "Allies"
+    },
+    "cbbd344f-fd0d-4167-b9e1-ac1aa6c918d1": {
+      "name": "Nationalist_China",
+      "side": "Allies"
+    },
+    "390f5941-b3c6-45e8-ad15-72ea4b03cf92": {
+      "name": "Netherlands",
+      "side": "Allies"
+    },
+    "d2b5e96a-0249-4eb6-8d7d-ce12f89a2106": {
+      "name": "New_Guangxi",
+      "side": "Allies"
+    },
+    "24a3ba6f-a839-4d09-a355-25cab095846a": {
+      "name": "Norway",
+      "side": "Allies"
+    },
+    "65e8e9aa-f01f-4c46-9f1c-6977ec2fae26": {
+      "name": "Protectorate_Of_Bohemia_Moravia",
+      "side": "Axis"
+    },
+    "fc826e13-190e-4793-a1ba-e87136f2ee0a": {
+      "name": "Italy",
+      "side": "Axis"
+    },
+    "1cf483c2-600a-408f-990d-44ad60d74ac8": {
+      "name": "Romania",
+      "side": "Axis"
+    },
+    "bcd52f7a-2c41-4f0c-9162-2adaec5fb058": {
+      "name": "Saudi_Arabia",
+      "side": "Allies"
+    },
+    "25bc1e00-5dc4-4816-bdb8-09fc51500650": {
+      "name": "Second_Spanish_Republic",
+      "side": "Allies"
+    },
+    "d7252e18-7335-4efa-911e-4760333293b6": {
+      "name": "Slovakia",
+      "side": "Axis"
+    },
+    "776af7c6-7694-4550-9528-53992c181356": {
+      "name": "Soviet_China",
+      "side": "Allies"
+    },
+    "cb4a0044-67e3-4937-bbdc-e52eb7bc43b0": {
+      "name": "Soviet_Union",
+      "side": "Allies"
+    },
+    "7774c6ef-c65d-425a-bb1b-7964a8d93749": {
+      "name": "Thailand",
+      "side": "Axis"
+    },
+    "2939133c-21eb-43a2-a4f4-8906449bba0e": {
+      "name": "United_States_of_America",
+      "side": "Allies"
+    },
+    "21ce0dd9-2d3c-4d25-a381-eff57d972262": {
+      "name": "Yugoslavia",
+      "side": "Allies"
+    },
+    "46b55fc6-9e4c-490c-af26-a8ef7c338119": {
+      "name": "Falangist_Portugal",
+      "side": "Axis"
+    },
+    "0a6616bb-d160-4136-bfe2-902b5b75f269": {
+      "name": "Liberia",
+      "side": "Allies"
+    }
+  }
+}
